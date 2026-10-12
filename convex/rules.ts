@@ -1,4 +1,4 @@
-import { requireOwner } from "./lib/requireOwner";
+import { requireFinanceAccess } from "./lib/requireOwner";
 import { v } from "convex/values";
 import { action, mutation, query } from "./_generated/server";
 import { api } from "./_generated/api";
@@ -61,7 +61,7 @@ async function ensureUniqueRuleMatcher(
 export const listActive = query({
   args: {},
   handler: async (ctx) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     return await ctx.db
       .query("rules")
       .withIndex("by_status", q => q.eq("status", "active"))
@@ -72,7 +72,7 @@ export const listActive = query({
 export const listCandidates = query({
   args: {},
   handler: async (ctx) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     return await ctx.db
       .query("rules")
       .withIndex("by_status", q => q.eq("status", "candidate"))
@@ -83,7 +83,7 @@ export const listCandidates = query({
 export const get = query({
   args: { id: v.id("rules") },
   handler: async (ctx, { id }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     return ctx.db.get(id);
   },
 });
@@ -103,7 +103,7 @@ export const create = mutation({
     source: v.union(v.literal("manual"), v.literal("ai")),
   },
   handler: async (ctx, args) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     const normalized = normalizeRulePayload(args);
     await ensureUniqueRuleMatcher(ctx, normalized.matcher);
     return await ctx.db.insert("rules", {
@@ -130,7 +130,7 @@ export const batchCreateCandidates = mutation({
     })),
   },
   handler: async (ctx, { rules }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     const created: Array<{
       _id: Id<"rules">;
       pattern: string;
@@ -171,7 +171,7 @@ export const batchCreateCandidates = mutation({
 export const approve = mutation({
   args: { id: v.id("rules") },
   handler: async (ctx, { id }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     const rule = await ctx.db.get(id);
     if (!rule) return;
     await ensureUniqueRuleMatcher(ctx, getRuleMatcher(rule), id);
@@ -182,7 +182,7 @@ export const approve = mutation({
 export const reject = mutation({
   args: { id: v.id("rules") },
   handler: async (ctx, { id }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     const rule = await ctx.db.get(id);
     if (!rule) return;
 
@@ -218,7 +218,7 @@ export const update = mutation({
     cat1: v.union(v.string(), v.null()),
   },
   handler: async (ctx, { id, ...fields }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     const normalized = normalizeRulePayload(fields);
     await ensureUniqueRuleMatcher(ctx, normalized.matcher, id);
     await ctx.db.patch(id, normalized);
@@ -228,7 +228,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("rules") },
   handler: async (ctx, { id }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     const rule = await ctx.db.get(id);
     if (!rule) return;
 
@@ -269,7 +269,7 @@ function matchesRule(
 export const applyRulesToImport = action({
   args: { importId: v.id("imports") },
   handler: async (ctx, { importId }): Promise<{ updated: number }> => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     const rules = await ctx.runQuery(api.rules.listActive, {});
     if (rules.length === 0) return { updated: 0 };
 
@@ -301,7 +301,7 @@ export const applyRulesToImport = action({
 export const applyAllRules = action({
   args: {},
   handler: async (ctx): Promise<{ updated: number }> => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     const rules = await ctx.runQuery(api.rules.listActive, {});
     if (rules.length === 0) return { updated: 0 };
 
@@ -334,7 +334,7 @@ export const applyAllRules = action({
 export const applyToTransactions = action({
   args: { id: v.id("rules") },
   handler: async (ctx, { id }): Promise<{ updated: number }> => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     const rule = await ctx.runQuery(api.rules.get, { id });
     if (!rule || rule.status !== "active") return { updated: 0 };
 
