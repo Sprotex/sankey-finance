@@ -1,9 +1,11 @@
+import { requireOwner } from "./lib/requireOwner";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireOwner(ctx);
     return await ctx.db
       .query("imports")
       .withIndex("by_importedAt")
@@ -18,6 +20,7 @@ export const listStoredStatements = query({
     to: v.string(),
   },
   handler: async (ctx, { from, to }) => {
+    await requireOwner(ctx);
     const imports = await ctx.db
       .query("imports")
       .withIndex("by_importedAt")
@@ -63,6 +66,7 @@ export const findDuplicate = query({
     accountNumber: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx);
     return await ctx.db
       .query("imports")
       .withIndex("by_statement_key", q =>
@@ -78,6 +82,7 @@ export const findDuplicate = query({
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireOwner(ctx);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -85,6 +90,7 @@ export const generateUploadUrl = mutation({
 export const deleteUploadedFile = mutation({
   args: { storageId: v.id("_storage") },
   handler: async (ctx, { storageId }) => {
+    await requireOwner(ctx);
     await ctx.storage.delete(storageId);
   },
 });
@@ -100,6 +106,7 @@ export const create = mutation({
     fileContentType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireOwner(ctx);
     const existing = await ctx.db
       .query("imports")
       .withIndex("by_statement_key", q =>
@@ -137,6 +144,7 @@ export const refreshParsedMetadata = mutation({
     transactionCount: v.number(),
   },
   handler: async (ctx, { id, ...rest }) => {
+    await requireOwner(ctx);
     await ctx.db.patch(id, {
       ...rest,
       importedAt: new Date().toISOString(),
@@ -147,6 +155,7 @@ export const refreshParsedMetadata = mutation({
 export const remove = mutation({
   args: { id: v.id("imports") },
   handler: async (ctx, { id }) => {
+    await requireOwner(ctx);
     const existing = await ctx.db.get(id);
     if (existing?.fileStorageId) {
       await ctx.storage.delete(existing.fileStorageId);
