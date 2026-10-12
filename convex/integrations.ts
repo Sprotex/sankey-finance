@@ -1,4 +1,4 @@
-import { requireOwner } from "./lib/requireOwner";
+import { requireFinanceAccess } from "./lib/requireOwner";
 import { v } from "convex/values";
 import { mutation, query, action } from "./_generated/server";
 import { api } from "./_generated/api";
@@ -7,7 +7,7 @@ import { encrypt, decrypt } from "./lib/crypto";
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     return await ctx.db.query("integrations").collect();
   },
 });
@@ -15,7 +15,7 @@ export const list = query({
 export const get = query({
   args: { id: v.id("integrations") },
   handler: async (ctx, { id }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     return await ctx.db.get(id);
   },
 });
@@ -27,7 +27,7 @@ export const create = mutation({
     label: v.string(),
   },
   handler: async (ctx, { bank, label }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     return await ctx.db.insert("integrations", {
       bank,
       label,
@@ -46,7 +46,7 @@ export const create = mutation({
 export const rename = mutation({
   args: { id: v.id("integrations"), label: v.string() },
   handler: async (ctx, { id, label }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     await ctx.db.patch(id, { label });
   },
 });
@@ -54,7 +54,7 @@ export const rename = mutation({
 export const remove = mutation({
   args: { id: v.id("integrations") },
   handler: async (ctx, { id }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     await ctx.db.delete(id);
   },
 });
@@ -62,7 +62,7 @@ export const remove = mutation({
 export const markError = mutation({
   args: { id: v.id("integrations"), error: v.string() },
   handler: async (ctx, { id, error }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     await ctx.db.patch(id, { status: "error", lastError: error });
   },
 });
@@ -76,7 +76,7 @@ export const storeTokens = mutation({
     accessTokenExpiry: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     await ctx.db.patch(args.id, {
       status: "active",
       encryptedRefreshToken: args.encryptedRefreshToken,
@@ -95,7 +95,7 @@ export const markSynced = mutation({
     accessTokenExpiry: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     await ctx.db.patch(args.id, {
       status: "active",
       linkedAccountNumbers: args.linkedAccountNumbers,
@@ -118,7 +118,7 @@ export const decryptTokens = action({
     accessToken: string | null;
     accessTokenExpiry: string | null;
   }> => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     const integration = await ctx.runQuery(api.integrations.get, { id });
     if (!integration) throw new Error("Integration not found");
     if (!integration.encryptedRefreshToken) throw new Error("No refresh token stored");
