@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ClerkProvider, SignedIn, SignedOut, SignIn, useAuth, UserButton } from '@clerk/react';
+import { ClerkProvider, SignIn, useAuth, UserButton } from '@clerk/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { ConvexReactClient } from 'convex/react';
 import App from './App';
@@ -24,18 +24,18 @@ style.textContent = `
 document.head.appendChild(style);
 
 function ProtectedApp() {
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) return null;
+  if (!isSignedIn) return (
+    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+      <SignIn routing="hash" />
+    </div>
+  );
   return <>
-    <SignedOut>
-      <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
-        <SignIn routing="hash" />
-      </div>
-    </SignedOut>
-    <SignedIn>
-      <div style={{ position: 'fixed', top: 10, right: 12, zIndex: 1000 }}>
-        <UserButton />
-      </div>
-      <App />
-    </SignedIn>
+    <div style={{ position: 'fixed', top: 10, right: 12, zIndex: 1000 }}>
+      <UserButton />
+    </div>
+    <App />
   </>;
 }
 
