@@ -1,10 +1,15 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ConvexProvider, ConvexReactClient } from 'convex/react';
+import { ClerkProvider, SignIn, useAuth, UserButton } from '@clerk/react';
+import { ConvexProviderWithClerk } from 'convex/react-clerk';
+import { ConvexReactClient, useConvexAuth } from 'convex/react';
 import App from './App';
 
-const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
-console.log('[Convex] connecting to:', convexUrl ?? '(VITE_CONVEX_URL not set)');
+const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const convexUrl = import.meta.env.VITE_CONVEX_URL;
+if (!clerkKey || !convexUrl) {
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY or VITE_CONVEX_URL');
+}
 const convex = new ConvexReactClient(convexUrl);
 
 const style = document.createElement('style');
@@ -18,10 +23,35 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+function ProtectedApp() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoading: isConvexLoading, isAuthenticated } = useConvexAuth();
+  if (!isLoaded || (isSignedIn && isConvexLoading)) return null;
+  if (!isSignedIn) return (
+    <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+      <SignIn routing="hash" />
+    </div>
+  );
+  if (!isAuthenticated) return (
+    <div role="alert" style={{ color: '#f38ba8', padding: 24 }}>
+      Clerk is signed in but the finance backend has not authenticated the session.
+      Verify that Convex is configured with Ultimate Shopper's existing Clerk issuer.
+    </div>
+  );
+  return <>
+    <div style={{ position: 'fixed', top: 10, right: 12, zIndex: 1000 }}>
+      <UserButton />
+    </div>
+    <App />
+  </>;
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ConvexProvider client={convex}>
-      <App />
-    </ConvexProvider>
+    <ClerkProvider publishableKey={clerkKey} afterSignOutUrl="/">
+      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+        <ProtectedApp />
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
   </StrictMode>,
 );

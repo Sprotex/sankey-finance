@@ -1,14 +1,19 @@
+import { requireFinanceAccess } from "./lib/requireOwner";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 export const listAll = query({
   args: {},
-  handler: async (ctx) => ctx.db.query("transactions").collect(),
+  handler: async (ctx) => {
+    await requireFinanceAccess(ctx);
+    return ctx.db.query("transactions").collect();
+  },
 });
 
 export const byImport = query({
   args: { importId: v.id("imports") },
   handler: async (ctx, { importId }) => {
+    await requireFinanceAccess(ctx);
     return await ctx.db
       .query("transactions")
       .withIndex("by_import", q => q.eq("importId", importId))
@@ -22,6 +27,7 @@ export const inspectReparseConflicts = query({
     originalIds: v.array(v.string()),
   },
   handler: async (ctx, { importId, originalIds }) => {
+    await requireFinanceAccess(ctx);
     const conflictingOriginalIds: string[] = [];
 
     for (const originalId of originalIds) {
@@ -49,6 +55,7 @@ export const byDateRange = query({
     to: v.string(),     // ISO date string "YYYY-MM-DD"
   },
   handler: async (ctx, { from, to }) => {
+    await requireFinanceAccess(ctx);
     return await ctx.db
       .query("transactions")
       .withIndex("by_datePosted", (q) =>
@@ -62,6 +69,7 @@ export const byDateRange = query({
 export const byPeriod = query({
   args: { period: v.string() },
   handler: async (ctx, { period }) => {
+    await requireFinanceAccess(ctx);
     return await ctx.db
       .query("transactions")
       .withIndex("by_period", (q) => q.eq("period", period))
@@ -73,6 +81,7 @@ export const byPeriod = query({
 export const listPeriods = query({
   args: {},
   handler: async (ctx) => {
+    await requireFinanceAccess(ctx);
     const statements = await ctx.db.query("statements").collect();
     return statements
       .map((s) => s.period)
@@ -85,6 +94,7 @@ export const listPeriods = query({
 export const uniqueCardholderNames = query({
   args: {},
   handler: async (ctx) => {
+    await requireFinanceAccess(ctx);
     const txs = await ctx.db.query("transactions").collect();
     const names = new Set(
       txs
@@ -125,6 +135,7 @@ export const upsert = mutation({
     bankAccountNumber: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await requireFinanceAccess(ctx);
     const existing = await ctx.db
       .query("transactions")
       .withIndex("by_originalId", (q) => q.eq("originalId", args.originalId))
@@ -156,6 +167,7 @@ export const updateCategories = mutation({
     ruleId: v.optional(v.id("rules")),
   },
   handler: async (ctx, { id, cat3, cat2, cat1, categorizationSource, ruleId }) => {
+    await requireFinanceAccess(ctx);
     await ctx.db.patch(id, { cat3, cat2, cat1, categorizationSource, ruleId });
   },
 });
@@ -168,6 +180,7 @@ export const updateGroup = mutation({
     groupLabel: v.union(v.string(), v.null()),
   },
   handler: async (ctx, { id, groupId, groupLabel }) => {
+    await requireFinanceAccess(ctx);
     await ctx.db.patch(id, { groupId, groupLabel });
   },
 });
@@ -192,6 +205,7 @@ export const batchUpsert = mutation({
     })),
   },
   handler: async (ctx, { transactions }) => {
+    await requireFinanceAccess(ctx);
     let inserted = 0;
     let skipped = 0;
     for (const tx of transactions) {
@@ -236,6 +250,7 @@ export const batchUpdateCategories = mutation({
     ),
   },
   handler: async (ctx, { updates }) => {
+    await requireFinanceAccess(ctx);
     for (const { id, cat3, cat2, cat1, categorizationSource, ruleId } of updates) {
       await ctx.db.patch(id, { cat3, cat2, cat1, categorizationSource, ruleId });
     }
@@ -246,6 +261,7 @@ export const batchUpdateCategories = mutation({
 export const batchDelete = mutation({
   args: { ids: v.array(v.id("transactions")) },
   handler: async (ctx, { ids }) => {
+    await requireFinanceAccess(ctx);
     for (const id of ids) {
       await ctx.db.delete(id);
     }
@@ -272,6 +288,7 @@ export const replaceByImport = mutation({
     })),
   },
   handler: async (ctx, { importId, conflictMode, transactions }) => {
+    await requireFinanceAccess(ctx);
     const existing = await ctx.db
       .query("transactions")
       .withIndex("by_import", q => q.eq("importId", importId))

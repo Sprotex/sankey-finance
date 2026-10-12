@@ -1,3 +1,4 @@
+import { requireFinanceAccess } from "./lib/requireOwner";
 import { v } from "convex/values";
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
@@ -15,6 +16,7 @@ import { encrypt } from "./lib/crypto";
 export const syncIntegration = action({
   args: { integrationId: v.id("integrations") },
   handler: async (ctx, { integrationId }) => {
+    await requireFinanceAccess(ctx);
     const encKey = process.env.TOKEN_ENCRYPTION_KEY;
     if (!encKey) throw new Error("TOKEN_ENCRYPTION_KEY not set");
 
@@ -129,6 +131,7 @@ export const syncIntegration = action({
 export const syncAll = action({
   args: {},
   handler: async (ctx) => {
+    await requireFinanceAccess(ctx);
     const integrations = await ctx.runQuery(api.integrations.list);
     const active = integrations.filter(i => i.status === "active");
     for (const integration of active) {

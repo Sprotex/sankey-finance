@@ -1,9 +1,11 @@
+import { requireFinanceAccess } from "./lib/requireOwner";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireFinanceAccess(ctx);
     return await ctx.db
       .query("statements")
       .withIndex("by_period")
@@ -14,6 +16,7 @@ export const list = query({
 export const byPeriod = query({
   args: { period: v.string() },
   handler: async (ctx, { period }) => {
+    await requireFinanceAccess(ctx);
     return await ctx.db
       .query("statements")
       .withIndex("by_period", (q) => q.eq("period", period))
@@ -31,6 +34,7 @@ export const upsert = mutation({
     totalDebits: v.number(),
   },
   handler: async (ctx, args) => {
+    await requireFinanceAccess(ctx);
     const existing = await ctx.db
       .query("statements")
       .withIndex("by_period", (q) => q.eq("period", args.period))
