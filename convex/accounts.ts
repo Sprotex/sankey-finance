@@ -1,9 +1,11 @@
+import { requireOwner } from "./lib/requireOwner";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireOwner(ctx);
     return await ctx.db
       .query("accounts")
       .withIndex("by_accountNumber")
@@ -18,6 +20,7 @@ export const ensureExists = mutation({
     institution: v.optional(v.string()),
   },
   handler: async (ctx, { accountNumber, institution }) => {
+    await requireOwner(ctx);
     const existing = await ctx.db
       .query("accounts")
       .withIndex("by_accountNumber", (q) => q.eq("accountNumber", accountNumber))
@@ -39,6 +42,7 @@ export const rename = mutation({
     name: v.string(),
   },
   handler: async (ctx, { accountNumber, name }) => {
+    await requireOwner(ctx);
     const account = await ctx.db
       .query("accounts")
       .withIndex("by_accountNumber", (q) => q.eq("accountNumber", accountNumber))
