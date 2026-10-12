@@ -1,9 +1,11 @@
+import { requireOwner } from "./lib/requireOwner";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireOwner(ctx);
     return await ctx.db.query("cardholderNicknames").collect();
   },
 });
@@ -11,6 +13,7 @@ export const list = query({
 export const upsert = mutation({
   args: { fullName: v.string(), nickname: v.string() },
   handler: async (ctx, { fullName, nickname }) => {
+    await requireOwner(ctx);
     const existing = await ctx.db
       .query("cardholderNicknames")
       .withIndex("by_fullName", (q) => q.eq("fullName", fullName))
@@ -26,6 +29,7 @@ export const upsert = mutation({
 export const remove = mutation({
   args: { id: v.id("cardholderNicknames") },
   handler: async (ctx, { id }) => {
+    await requireOwner(ctx);
     await ctx.db.delete(id);
   },
 });
