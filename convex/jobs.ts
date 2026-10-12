@@ -1,11 +1,11 @@
-import { requireOwner } from "./lib/requireOwner";
+import { requireFinanceAccess } from "./lib/requireOwner";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     return await ctx.db
       .query("jobs")
       .withIndex("by_type")
@@ -17,7 +17,7 @@ export const list = query({
 export const latestByType = query({
   args: { type: v.string() },
   handler: async (ctx, { type }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     return await ctx.db
       .query("jobs")
       .withIndex("by_type", (q) => q.eq("type", type))
@@ -32,7 +32,7 @@ export const create = mutation({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, { type, metadata }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     return await ctx.db.insert("jobs", {
       type,
       status: "pending",
@@ -47,7 +47,7 @@ export const create = mutation({
 export const markRunning = mutation({
   args: { id: v.id("jobs") },
   handler: async (ctx, { id }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     await ctx.db.patch(id, {
       status: "running",
       startedAt: new Date().toISOString(),
@@ -58,7 +58,7 @@ export const markRunning = mutation({
 export const markSuccess = mutation({
   args: { id: v.id("jobs"), metadata: v.optional(v.any()) },
   handler: async (ctx, { id, metadata }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     await ctx.db.patch(id, {
       status: "success",
       completedAt: new Date().toISOString(),
@@ -71,7 +71,7 @@ export const markSuccess = mutation({
 export const markError = mutation({
   args: { id: v.id("jobs"), error: v.string() },
   handler: async (ctx, { id, error }) => {
-    await requireOwner(ctx);
+    await requireFinanceAccess(ctx);
     await ctx.db.patch(id, {
       status: "error",
       completedAt: new Date().toISOString(),
