@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ClerkProvider, SignIn, useAuth, UserButton } from '@clerk/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
-import { ConvexReactClient } from 'convex/react';
+import { ConvexReactClient, useConvexAuth } from 'convex/react';
 import App from './App';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -25,10 +25,17 @@ document.head.appendChild(style);
 
 function ProtectedApp() {
   const { isLoaded, isSignedIn } = useAuth();
-  if (!isLoaded) return null;
+  const { isLoading: isConvexLoading, isAuthenticated } = useConvexAuth();
+  if (!isLoaded || (isSignedIn && isConvexLoading)) return null;
   if (!isSignedIn) return (
     <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
       <SignIn routing="hash" />
+    </div>
+  );
+  if (!isAuthenticated) return (
+    <div role="alert" style={{ color: '#f38ba8', padding: 24 }}>
+      Clerk is signed in but the finance backend has not authenticated the session.
+      Verify that Convex is configured with Ultimate Shopper's existing Clerk issuer.
     </div>
   );
   return <>
